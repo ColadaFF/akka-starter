@@ -1,29 +1,25 @@
 package co.com.ias.lab.scala
 
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.server.Route
 import akka.pattern.ask
+import akka.stream.ActorMaterializer
 import akka.util.Timeout
+import co.com.ias.lab.scala.UsersActor.User
 
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object Quickstart extends App {
-  val system: ActorSystem = ActorSystem("akka-system-1")
-  implicit val timeout:Timeout = Timeout(500, TimeUnit.MILLISECONDS)
-  implicit val ec: ExecutionContext = ExecutionContext.global
+object Quickstart extends App with UserRoutes {
+  implicit val system: ActorSystem = ActorSystem("akka-system-1")
+  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val loggerActor: ActorRef = system.actorOf(
-    LoggerActor.props,
-    "logger"
-  )
-
-  val morningGreeter: ActorRef = system.actorOf(
-    GreeterActor.props("Buenos días", loggerActor),
-    "morning-greeter"
-  )
 
   val usersActor: ActorRef = system.actorOf(
     UsersActor.props,
@@ -31,12 +27,24 @@ object Quickstart extends App {
   )
 
 
-  private val future: Future[Any] = usersActor ? UsersActor.FindAll
+  lazy val routes: Route = userRoutes
 
-  future
-    .onComplete {
-      case Failure(exception) => exception.printStackTrace()
-      case Success(value) => println(s"value: $value")
-    }
+  val serverBinding: Future[Http.ServerBinding] = Http()
+    .bindAndHandle(routes, "localhost", 8080)
+
+  serverBinding.onComplete {
+    case Failure(exception) =>
+      Console.err.println("Error en el servidor")
+      exception.printStackTrace()
+      system.terminate()
+    case Success(value) =>
+      val serverAddress = value.localAddress.getHostString
+      val serverPort = value.localAddress.getPort
+      println(s"Servidor corriendo en http://$serverAddress:$serverPort")
+  }
+
+  Await.result(system.whenTerminated, Duration.Inf)
 
 }
+
+//https://github.com/coladaff/akka-starter

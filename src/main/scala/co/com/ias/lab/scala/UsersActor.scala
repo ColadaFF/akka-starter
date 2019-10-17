@@ -1,7 +1,12 @@
 package co.com.ias.lab.scala
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.ask
+import co.com.ias.lab.scala.Quickstart.usersActor
+
+import scala.collection.mutable
 
 
 object UsersActor {
@@ -9,6 +14,7 @@ object UsersActor {
 
 
   case class User(id: String, name: String)
+  case class Users(users: Seq[User])
 
   sealed trait UserOperationRequest
   case class AddUser(user: User) extends UserOperationRequest
@@ -31,7 +37,11 @@ object UsersActor {
 class UsersActor extends Actor with ActorLogging {
   import UsersActor._
 
-  val users = scala.collection.mutable.Map[String, User]()
+  private val id: String = UUID.randomUUID().toString
+  val users: mutable.Map[String, User] = scala.collection.mutable.Map[String, User](
+    id -> User(id, "Test User")
+
+  )
 
 
   override def receive: Receive = {
@@ -41,7 +51,7 @@ class UsersActor extends Actor with ActorLogging {
     }
     case FindAll => {
       log.info("Got Find All")
-      sender() ! users.values
+      sender() ! Users(users.values.toSeq)
     }
   }
 }
