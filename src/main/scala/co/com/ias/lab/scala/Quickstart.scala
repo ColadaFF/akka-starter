@@ -12,9 +12,7 @@ import scala.util.{Failure, Success}
 object Quickstart extends App with UserRoutes with DatabaseConfig {
   implicit val system: ActorSystem = ActorSystem("akka-system-1")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-
-
-
+  override implicit val ec: ExecutionContext = system.dispatcher
 
 
 
@@ -38,10 +36,10 @@ object Quickstart extends App with UserRoutes with DatabaseConfig {
       val serverAddress = value.localAddress.getHostString
       val serverPort = value.localAddress.getPort
       println(s"Servidor corriendo en http://$serverAddress:$serverPort")
+      setupDb()
   }
 
   Await.result(system.whenTerminated, Duration.Inf)
-
 }
 
 //https://github.com/coladaff/akka-starter

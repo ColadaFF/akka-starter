@@ -9,7 +9,7 @@ import scala.util.{Failure, Success}
 
 trait DatabaseConfig {
 
-  implicit val ec: ExecutionContext = ExecutionContext.global
+  implicit val ec: ExecutionContext
 
   class Users(tag: Tag) extends Table[(Int, String, String)](tag, "USERS") {
     def id = column[Int]("USER_ID", O.PrimaryKey)
@@ -46,30 +46,35 @@ trait DatabaseConfig {
 
   val db = Database.forConfig("h2mem")
 
-  val setupDb = DBIO.seq(
-    (users.schema ++ accounts.schema).create,
-    users += (1, "Luis", "Perez"),
-    users += (2, "Luis", "Gomez"),
-    users += (3, "Luis", "Jaramillo"),
-    accounts += (1, 1, 0),
-    accounts += (2, 2, 0),
-    accounts += (3, 2, 0)
-  )
+  def setupDb() = {
 
-  val setupFuture: Future[Unit] = db.run(setupDb)
+    val setupDbAction = DBIO.seq(
+      (users.schema ++ accounts.schema).create,
+      users += (1, "Luis", "Perez"),
+      users += (2, "Luis", "Gomez"),
+      users += (3, "Luis", "Jaramillo"),
+      accounts += (1, 1, 0),
+      accounts += (2, 2, 0),
+      accounts += (3, 2, 0)
+    )
 
-  setupFuture.onComplete {
-    case Failure(exception) =>
-      exception.printStackTrace()
-      Console.err.println("Could not setup database")
-    case Success(value) =>
-      println(s"Setup Database complete: $value")
+    val setupFuture: Future[Unit] = db.run(setupDbAction)
 
+    setupFuture.onComplete {
+      case Failure(exception) =>
+        exception.printStackTrace()
+        Console.err.println("Could not setup database")
+      case Success(value) =>
+        println(s"Setup Database complete: $value")
+        db.run(users.result).map(_.foreach {
+          case (i, str, str1) => println(s"$i, $str, $str1")
+        })
+
+    }
   }
 
-  db.run(users.result).map(_.foreach {
-    case (i, str, str1) => print(s"$i, $str, $str1")
-  })
+
+
 
 
 }
