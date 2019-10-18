@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 
 object UsersActor {
-  def props: Props = Props[UsersActor]
+  def props(dao: UsersDAO ): Props = Props(new UsersActor(dao))
 
 
   case class User(id: String, name: String)
@@ -65,7 +65,7 @@ object UsersActor {
 
 }
 
-class UsersActor extends Actor with ActorLogging {
+class UsersActor(dao: UsersDAO) extends Actor with ActorLogging {
 
   import UsersActor._
 
@@ -111,6 +111,7 @@ class UsersActor extends Actor with ActorLogging {
       sender() ! addUser(user)
     case FindAll => {
       log.info("Got Find All")
+      dao.findAll
       sender() ! Users(users.values.toSeq)
     }
     case UpdateUser(id, user) => sender() ! updateUser(id, user)

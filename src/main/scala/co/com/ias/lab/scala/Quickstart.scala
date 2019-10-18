@@ -15,9 +15,10 @@ object Quickstart extends App with UserRoutes with DatabaseConfig {
   override implicit val ec: ExecutionContext = system.dispatcher
 
 
+  val usersDAO = new UsersDAO(db, users)
 
   val usersActor: ActorRef = system.actorOf(
-    UsersActor.props,
+    UsersActor.props(UsersDAO),
     "users-actor"
   )
 
