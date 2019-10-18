@@ -1,13 +1,16 @@
 package co.com.ias.lab.scala
 
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorLogging, Props}
-import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout
 import co.com.ias.lab.scala.Quickstart.usersActor
 import co.com.ias.lab.scala.UsersActor.ValidationType
 
 import scala.collection.mutable
+import scala.concurrent.{ExecutionContext, Future}
 
 
 object UsersActor {
@@ -66,8 +69,11 @@ object UsersActor {
 }
 
 class UsersActor(dao: UsersDAO) extends Actor with ActorLogging {
-
+  import akka.pattern.pipe
   import UsersActor._
+
+  implicit val ec:ExecutionContext = context.dispatcher
+  implicit val timeout:Timeout = Timeout(5, TimeUnit.SECONDS)
 
   private val id: String = UUID.randomUUID().toString
   val users: mutable.Map[String, User] = scala.collection.mutable.Map[String, User](
@@ -111,8 +117,14 @@ class UsersActor(dao: UsersDAO) extends Actor with ActorLogging {
       sender() ! addUser(user)
     case FindAll => {
       log.info("Got Find All")
-      dao.findAll
-      sender() ! Users(users.values.toSeq)
+      val findAllFuture: Future[Seq[(Int, String, String)]] = dao.findAll
+      findAllFuture
+          .map(tuples => {
+            val values = tuples
+              .map(tuple => User(tuple._1.toString, s"${tuple._2} ${tuple._3} "))
+            Users(values)
+          })
+        .pipeTo(sender())
     }
     case UpdateUser(id, user) => sender() ! updateUser(id, user)
     case FindOne(id) => sender() ! findOne(id)

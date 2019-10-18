@@ -12,13 +12,13 @@ import scala.util.{Failure, Success}
 object Quickstart extends App with UserRoutes with DatabaseConfig {
   implicit val system: ActorSystem = ActorSystem("akka-system-1")
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  override implicit val ec: ExecutionContext = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
 
-  val usersDAO = new UsersDAO(db, users)
+  val usersDAO = new UsersDAO(db, DatabaseConfig.users)
 
   val usersActor: ActorRef = system.actorOf(
-    UsersActor.props(UsersDAO),
+    UsersActor.props(usersDAO),
     "users-actor"
   )
 
@@ -37,7 +37,7 @@ object Quickstart extends App with UserRoutes with DatabaseConfig {
       val serverAddress = value.localAddress.getHostString
       val serverPort = value.localAddress.getPort
       println(s"Servidor corriendo en http://$serverAddress:$serverPort")
-      setupDb()
+      DatabaseConfig.setupDb(db)
   }
 
   Await.result(system.whenTerminated, Duration.Inf)

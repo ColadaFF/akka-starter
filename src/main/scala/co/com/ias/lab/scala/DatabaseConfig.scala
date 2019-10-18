@@ -9,18 +9,39 @@ import scala.util.{Failure, Success}
 
 
 trait DatabaseConfig {
-  import DatabaseConfig._
+  val db: H2Profile.backend.Database = Database.forConfig("h2mem")
+}
 
-  implicit val ec: ExecutionContext
+object DatabaseConfig {
+  class Users(tag: Tag) extends Table[(Int, String, String)](tag, "USERS") {
+    def id = column[Int]("USER_ID", O.PrimaryKey)
+
+    def name = column[String]("NAME")
+
+    def lastName = column[String]("LAST_NAME")
+
+    def * = (id, name, lastName)
+  }
 
   val users: TableQuery[Users] = TableQuery[Users]
+
+  class Account(tag: Tag) extends Table[(Int, Int, Int)](tag, "ACCOUNTS") {
+
+    def id = column[Int]("ID", O.PrimaryKey)
+
+    def userId = column[Int]("USER_ID")
+
+    def balance = column[Int]("BALANCE")
+
+    override def * = (id, userId, balance)
+
+    def user: ForeignKeyQuery[Users, (Int, String, String)] =
+      foreignKey("USER_PK", userId, users)(_.id)
+  }
+
   val accounts = TableQuery[Account]
 
-  val accountsSchema = users.schema
-
-  val db: H2Profile.backend.Database = Database.forConfig("h2mem")
-
-  def setupDb() = {
+  def setupDb(db: H2Profile.backend.Database)(implicit ec:ExecutionContext) = {
 
     val setupDbAction = DBIO.seq(
       (users.schema ++ accounts.schema).create,
@@ -47,31 +68,4 @@ trait DatabaseConfig {
     }
   }
 
-
-}
-
-object DatabaseConfig {
-  class Users(tag: Tag) extends Table[(Int, String, String)](tag, "USERS") {
-    def id = column[Int]("USER_ID", O.PrimaryKey)
-
-    def name = column[String]("NAME")
-
-    def lastName = column[String]("LAST_NAME")
-
-    def * = (id, name, lastName)
-  }
-
-  class Account(tag: Tag) extends Table[(Int, Int, Int)](tag, "ACCOUNTS") {
-
-    def id = column[Int]("ID", O.PrimaryKey)
-
-    def userId = column[Int]("USER_ID")
-
-    def balance = column[Int]("BALANCE")
-
-    override def * = (id, userId, balance)
-
-    def user: ForeignKeyQuery[Users, (Int, String, String)] =
-      foreignKey("USER_PK", userId, users)(_.id)
-  }
 }
