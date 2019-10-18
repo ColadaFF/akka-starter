@@ -24,6 +24,15 @@ trait UserRoutes extends JsonSupport {
   def usersActor: ActorRef
 
   /**
+   *
+   * SLICK
+   * Scala
+   * Language
+   * Intregated
+   * Connection
+   * Kit
+   *
+   *
    * localhost:8080/users/
    *  - GET
    *  - POST

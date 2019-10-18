@@ -9,10 +9,14 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object Quickstart extends App with UserRoutes {
+object Quickstart extends App with UserRoutes with DatabaseConfig {
   implicit val system: ActorSystem = ActorSystem("akka-system-1")
   implicit val ec: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
+
+
+
+
 
 
   val usersActor: ActorRef = system.actorOf(
