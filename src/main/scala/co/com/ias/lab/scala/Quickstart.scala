@@ -11,7 +11,6 @@ import scala.util.{Failure, Success}
 
 object Quickstart extends App with UserRoutes with DatabaseConfig {
   implicit val system: ActorSystem = ActorSystem("akka-system-1")
-  implicit val ec: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
 

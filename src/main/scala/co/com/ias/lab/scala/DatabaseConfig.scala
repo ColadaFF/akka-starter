@@ -9,10 +9,7 @@ import scala.util.{Failure, Success}
 
 trait DatabaseConfig {
 
-  implicit val ec: ExecutionContext
-
-  val db = Database.forConfig("h2mem")
-  println(db)
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   class Users(tag: Tag) extends Table[(Int, String, String)](tag, "USERS") {
     def id = column[Int]("USER_ID", O.PrimaryKey)
@@ -47,6 +44,8 @@ trait DatabaseConfig {
 
   val accountsSchema = users.schema
 
+  val db = Database.forConfig("h2mem")
+
   val setupDb = DBIO.seq(
     (users.schema ++ accounts.schema).create,
     users += (1, "Luis", "Perez"),
@@ -59,8 +58,17 @@ trait DatabaseConfig {
 
   val setupFuture: Future[Unit] = db.run(setupDb)
 
+  setupFuture.onComplete {
+    case Failure(exception) =>
+      exception.printStackTrace()
+      Console.err.println("Could not setup database")
+    case Success(value) =>
+      println(s"Setup Database complete: $value")
+
+  }
+
   db.run(users.result).map(_.foreach {
-    case (i, str, str1) => println(s"$i, $str, $str1")
+    case (i, str, str1) => print(s"$i, $str, $str1")
   })
 
 
