@@ -5,6 +5,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.ask
 import co.com.ias.lab.scala.Quickstart.usersActor
+import co.com.ias.lab.scala.UsersActor.ValidationType
 
 import scala.collection.mutable
 
@@ -32,6 +33,20 @@ object UsersActor {
   case class UserUpdated(userId: String, user: User) extends UserOperationResponse
 
 
+  object ValidationType extends Enumeration {
+    val USER_ALREADY_EXISTS = Value
+  }
+
+  sealed trait DomainValidation {
+    def reason: String
+    def validationType: ValidationType.Value
+  }
+  case object UserAlreadyExists extends DomainValidation {
+    val reason: String = "El usuario ya existe"
+    val validationType: ValidationType.Value = ValidationType.USER_ALREADY_EXISTS
+  }
+
+
 }
 
 class UsersActor extends Actor with ActorLogging {
@@ -43,12 +58,19 @@ class UsersActor extends Actor with ActorLogging {
 
   )
 
+  def addUser(user: User): Either[DomainValidation, UserCreated] = {
+    if(users.contains(user.id)){
+      Left(UserAlreadyExists)
+    } else {
+      users += (user.id -> user)
+      Right(UserCreated(user))
+    }
+  }
+
 
   override def receive: Receive = {
-    case AddUser(user) => {
-      users + (user.id -> user)
-      sender() ! UserCreated(user)
-    }
+    case AddUser(user) =>
+      sender() ! addUser(user)
     case FindAll => {
       log.info("Got Find All")
       sender() ! Users(users.values.toSeq)

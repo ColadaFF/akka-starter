@@ -1,15 +1,9 @@
 package co.com.ias.lab.scala
 
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.util.Timeout
-import co.com.ias.lab.scala.UsersActor.User
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
